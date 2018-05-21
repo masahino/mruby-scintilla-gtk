@@ -148,32 +148,34 @@ mrb_scintilla_gtk_send_message_get_str(mrb_state *mrb, mrb_value self)
   mrb_value w_param_obj;
   uptr_t w_param = 0;
   char *value = NULL;
-  mrb_int i_message, len;
-
-  mrb_get_args(mrb, "io", &i_message, &w_param_obj);
-  switch(mrb_type(w_param_obj)) {
-  case MRB_TT_FIXNUM:
-    w_param = (uptr_t)mrb_fixnum(w_param_obj);
-    break;
-  case MRB_TT_STRING:
-    w_param = (uptr_t)mrb_string_value_ptr(mrb, w_param_obj);
-    break;
-  case MRB_TT_TRUE:
-    w_param = TRUE;
-    break;
-  case MRB_TT_FALSE:
-    w_param = FALSE;
-    break;
-  case MRB_TT_UNDEF:
-    w_param = 0;
-    break;
-  default:
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid parameter");
-    return mrb_nil_value();
+  mrb_int i_message, len, argc;
+  argc = mrb_get_args(mrb, "i|o", &i_message, &w_param_obj);
+  if (argc > 1) {
+    switch(mrb_type(w_param_obj)) {
+      case MRB_TT_FIXNUM:
+      w_param = (uptr_t)mrb_fixnum(w_param_obj);
+      break;
+      case MRB_TT_STRING:
+      w_param = (uptr_t)mrb_string_value_ptr(mrb, w_param_obj);
+      break;
+      case MRB_TT_TRUE:
+      w_param = TRUE;
+      break;
+      case MRB_TT_FALSE:
+      w_param = FALSE;
+      break;
+      case MRB_TT_UNDEF:
+      w_param = 0;
+      break;
+      default:
+      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid parameter");
+      return mrb_nil_value();
+    }
   }
 
   len = scintilla_send_message(SCINTILLA(sci), i_message, w_param, (sptr_t)NULL);
   value = (char *)malloc(sizeof(char)*len);
+
   len = scintilla_send_message(SCINTILLA(sci), i_message, w_param, (sptr_t)value);
   return mrb_str_new(mrb, value, len);
 }
@@ -302,7 +304,7 @@ mrb_mruby_scintilla_gtk_gem_init(mrb_state* mrb)
   MRB_SET_INSTANCE_TT(sci, MRB_TT_DATA);
   mrb_define_method(mrb, sci, "initialize", mrb_scintilla_gtk_initialize, MRB_ARGS_NONE());
   mrb_define_method(mrb, sci, "send_message", mrb_scintilla_gtk_send_message, MRB_ARGS_ARG(1, 2));
-  mrb_define_method(mrb, sci, "send_message_get_str", mrb_scintilla_gtk_send_message_get_str, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, sci, "send_message_get_str", mrb_scintilla_gtk_send_message_get_str, MRB_ARGS_ARG(1, 1));
 
   mrb_define_method(mrb, sci, "sci_get_text", mrb_scintilla_gtk_get_text, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, sci, "sci_get_curline", mrb_scintilla_gtk_get_curline, MRB_ARGS_NONE());
@@ -321,7 +323,7 @@ mrb_mruby_scintilla_gtk_gem_init(mrb_state* mrb)
 #if defined(__APPLE__)
   mrb_define_const(mrb, scim, "PLATFORM", mrb_symbol_value(mrb_intern_cstr(mrb, "GTK_MACOSX")));
 #elif defined(__WIN_32__) || defined(_MSC_VER)
-p  mrb_define_const(mrb, scim, "PLATFORM", mrb_symbol_value(mrb_intern_cstr(mrb, "GTK_WIN32")));
+  mrb_define_const(mrb, scim, "PLATFORM", mrb_symbol_value(mrb_intern_cstr(mrb, "GTK_WIN32")));
 #else
   mrb_define_const(mrb, scim, "PLATFORM", mrb_symbol_value(mrb_intern_cstr(mrb, "GTK")));
 #endif  
