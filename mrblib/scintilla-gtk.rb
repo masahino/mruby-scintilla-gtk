@@ -17,10 +17,6 @@ module Scintilla
 #        CFunc::Int(message), w_param, l_param).to_i
 #    end
     
-    def sci_set_lexer_language(lang)
-      send_message(Scintilla::SCI_SETLEXERLANGUAGE, 0, lang)
-    end
-
     def sci_get_property(param)
       send_message_get_str(Scintilla::SCI_GETPROPERTY, param)
     end

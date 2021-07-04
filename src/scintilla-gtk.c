@@ -12,6 +12,7 @@
 #include "Scintilla.h"
 #define PLAT_GTK 1
 #include "ScintillaWidget.h"
+#include "lexilla.h"
 
 #define DONE mrb_gc_arena_restore(mrb, 0)
 
@@ -210,6 +211,18 @@ mrb_scintilla_gtk_get_curline(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
+mrb_scintilla_gtk_set_lexer_language(mrb_state *mrb, mrb_value self)
+{
+  GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
+  char *lang = NULL;
+  mrb_get_args(mrb, "z", &lang);
+
+  ILexer5 *pLexer = CreateLexer(lang);
+
+  scintilla_send_message(SCINTILLA(sci), SCI_SETILEXER, 0, (sptr_t)pLexer);
+  return mrb_nil_value();
+}
+static mrb_value
 mrb_scintilla_gtk_get_lexer_language(mrb_state *mrb, mrb_value self)
 {
   GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
@@ -309,6 +322,7 @@ mrb_mruby_scintilla_gtk_gem_init(mrb_state* mrb)
   mrb_define_method(mrb, sci, "sci_get_text", mrb_scintilla_gtk_get_text, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, sci, "sci_get_curline", mrb_scintilla_gtk_get_curline, MRB_ARGS_NONE());
     
+  mrb_define_method(mrb, sci, "sci_set_lexer_language", mrb_scintilla_gtk_set_lexer_language, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, sci, "sci_get_lexer_language", mrb_scintilla_gtk_get_lexer_language, MRB_ARGS_NONE());
 
   mrb_define_method(mrb, sci, "sci_get_docpointer", mrb_scintilla_gtk_get_docpointer, MRB_ARGS_NONE());
