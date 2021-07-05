@@ -2,7 +2,7 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
   spec.license = 'MIT'
   spec.authors = 'masahino'
   spec.cc.flags << "-DGTK -DSCI_LEXER"
-  spec.add_dependency 'mruby-scintilla-base', :github => 'masahino/mruby-scintilla-base', :branch => "scintilla5"
+  spec.add_dependency 'mruby-scintilla-base', :github => 'masahino/mruby-scintilla-base'
   spec.version = '5.1.0'
 
   def spec.download_scintilla
