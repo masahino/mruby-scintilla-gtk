@@ -12,7 +12,7 @@
 #include "Scintilla.h"
 #define PLAT_GTK 1
 #include "ScintillaWidget.h"
-#include "lexilla.h"
+#include "Lexilla.h"
 
 #define DONE mrb_gc_arena_restore(mrb, 0)
 
