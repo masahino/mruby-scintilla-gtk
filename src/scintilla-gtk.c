@@ -182,6 +182,24 @@ mrb_scintilla_gtk_send_message_get_str(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
+mrb_scintilla_gtk_send_message_get_text_range(mrb_state *mrb, mrb_value self)
+{
+  GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
+
+  mrb_int i_message, cp_min, cp_max;
+  struct Sci_TextRange *tr = (struct Sci_TextRange *)mrb_malloc(mrb, sizeof(struct Sci_TextRange));
+
+  mrb_get_args(mrb, "iii", &i_message, &cp_min, &cp_max);
+  tr->chrg.cpMin = cp_min;
+  tr->chrg.cpMax = cp_max;
+  tr->lpstrText = (char *)mrb_malloc(mrb, sizeof(char)*(cp_max - cp_min + 2));
+
+  scintilla_send_message(SCINTILLA(sci), i_message, 0, (sptr_t)tr);
+  return mrb_str_new_cstr(mrb, tr->lpstrText);
+}
+
+
+static mrb_value
 mrb_scintilla_gtk_get_text(mrb_state *mrb, mrb_value self)
 {
   GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
@@ -303,7 +321,7 @@ mrb_scintilla_gtk_release_document(mrb_state *mrb, mrb_value self)
 
   mrb_get_args(mrb, "o", &doc_obj);
   doc = (struct mrb_scintilla_doc_data *)DATA_PTR(doc_obj);
-      scintilla_send_message(SCINTILLA(sci), SCI_RELEASEDOCUMENT, 0, doc->pdoc);
+  scintilla_send_message(SCINTILLA(sci), SCI_RELEASEDOCUMENT, 0, doc->pdoc);
   return mrb_nil_value();
 }
 
@@ -318,6 +336,7 @@ mrb_mruby_scintilla_gtk_gem_init(mrb_state* mrb)
   mrb_define_method(mrb, sci, "initialize", mrb_scintilla_gtk_initialize, MRB_ARGS_NONE());
   mrb_define_method(mrb, sci, "send_message", mrb_scintilla_gtk_send_message, MRB_ARGS_ARG(1, 2));
   mrb_define_method(mrb, sci, "send_message_get_str", mrb_scintilla_gtk_send_message_get_str, MRB_ARGS_ARG(1, 1));
+  mrb_define_method(mrb, sci, "send_message_get_text_range", mrb_scintilla_gtk_send_message_get_text_range, MRB_ARGS_REQ(3));
 
   mrb_define_method(mrb, sci, "sci_get_text", mrb_scintilla_gtk_get_text, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, sci, "sci_get_curline", mrb_scintilla_gtk_get_curline, MRB_ARGS_NONE());
