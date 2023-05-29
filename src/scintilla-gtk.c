@@ -31,7 +31,7 @@ struct mrb_scintilla_doc_data {
 static struct mrb_scintilla_data *scintilla_list = NULL;
 
 static void scintilla_gtk_free(mrb_state *mrb, void *ptr) {
-  fprintf(stderr, "scintilla_gtk_free %p\n", ptr);
+  // fprintf(stderr, "scintilla_gtk_free %p\n", ptr);
   if (ptr != NULL) {
     //	  scintilla_delete(ptr);
   }
@@ -200,20 +200,20 @@ mrb_scintilla_gtk_send_message_get_text_range(mrb_state *mrb, mrb_value self)
 
 
 static mrb_value
-mrb_scintilla_gtk_get_text(mrb_state *mrb, mrb_value self)
+mrb_scintilla_gtk_send_message_get_text(mrb_state *mrb, mrb_value self)
 {
   GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
   char *text = NULL;
-  mrb_int nlen;
+  mrb_int i_message, nlen;
  
-  mrb_get_args(mrb, "i", &nlen);
+  mrb_get_args(mrb, "ii", &i_message, &nlen);
   text = (char *)mrb_malloc(mrb, sizeof(char)*nlen);
-  scintilla_send_message(SCINTILLA(sci), SCI_GETTEXT, (uptr_t)nlen, (sptr_t)text);
+  scintilla_send_message(SCINTILLA(sci), i_message, (uptr_t)nlen, (sptr_t)text);
   return mrb_str_new_cstr(mrb, text);
 }
 
 static mrb_value
-mrb_scintilla_gtk_get_curline(mrb_state *mrb, mrb_value self)
+mrb_scintilla_gtk_send_message_get_curline(mrb_state *mrb, mrb_value self)
 {
   GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
   char *text = NULL;
@@ -226,6 +226,22 @@ mrb_scintilla_gtk_get_curline(mrb_state *mrb, mrb_value self)
   mrb_ary_push(mrb, ret_a, mrb_str_new_cstr(mrb, text));
   mrb_ary_push(mrb, ret_a, mrb_fixnum_value(pos));
   return ret_a;
+}
+
+static mrb_value
+mrb_scintilla_gtk_send_message_get_line(mrb_state *mrb, mrb_value self)
+{
+  GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
+  char *text = NULL;
+  mrb_int line, len;
+
+  mrb_get_args(mrb, "i", &line);
+  len = scintilla_send_message(sci, SCI_LINELENGTH, (uptr_t)line, (sptr_t)0);
+  text = (char *)mrb_malloc(mrb, sizeof(char) * len + 1);
+  scintilla_send_message(sci, SCI_GETLINE, (uptr_t)line, (sptr_t)text);
+  text[len] = '\0';
+
+  return mrb_str_new_cstr(mrb, text);
 }
 
 static mrb_value
@@ -254,35 +270,64 @@ mrb_scintilla_gtk_get_lexer_language(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
-mrb_scintilla_gtk_get_docpointer(mrb_state *mrb, mrb_value self)
+mrb_scintilla_gtk_send_message_get_docpointer(mrb_state *mrb, mrb_value self)
 {
   GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
   sptr_t pdoc;
-  struct mrb_scintilla_doc_data *doc =
-  (struct mrb_scintilla_doc_data *)mrb_malloc(mrb, sizeof(struct mrb_scintilla_doc_data));
+  mrb_int argc, i_message, w_param, l_param;
 
-  pdoc = scintilla_send_message(SCINTILLA(sci), SCI_GETDOCPOINTER, 0, 0);
-  doc->pdoc = pdoc;
-  return mrb_obj_value(mrb_data_object_alloc(mrb,
-      mrb_class_get_under(mrb, mrb_module_get(mrb, "Scintilla"), "Document"),
-      doc, &mrb_document_type));
+  argc = mrb_get_args(mrb, "i|ii", &i_message, &w_param, &l_param);
+  if (argc == 1) {
+    w_param = 0;
+    l_param = 0;
+  }
+  struct mrb_scintilla_doc_data *doc = (struct mrb_scintilla_doc_data *)mrb_malloc(mrb, sizeof(struct mrb_scintilla_doc_data));
+
+  pdoc = scintilla_send_message(sci, i_message, (uptr_t)w_param, (sptr_t)l_param);
+  if (pdoc == 0) {
+    return mrb_nil_value();
+  } else {
+    doc->pdoc = pdoc;
+    return mrb_obj_value(mrb_data_object_alloc(mrb, mrb_class_get_under(mrb, mrb_module_get(mrb, "Scintilla"), "Document"), doc, &mrb_document_type));
+  }
 }
 
 static mrb_value
-mrb_scintilla_gtk_set_docpointer(mrb_state *mrb, mrb_value self)
+mrb_scintilla_gtk_send_message_set_docpointer(mrb_state *mrb, mrb_value self)
 {
   GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
   struct mrb_scintilla_doc_data *doc;
   mrb_value doc_obj;
+  mrb_int i_message, ret;
 
-  mrb_get_args(mrb, "o", &doc_obj);
-  if (mrb_nil_p(doc_obj)) {
-    scintilla_send_message(SCINTILLA(sci), SCI_SETDOCPOINTER, 0, (sptr_t)0);
+  mrb_get_args(mrb, "io", &i_message, &doc_obj);
+  if (mrb_nil_p(doc_obj) || mrb_integer_p(doc_obj)) {
+    ret = scintilla_send_message(sci, i_message, 0, (sptr_t)0);
   } else {
     doc = (struct mrb_scintilla_doc_data *)DATA_PTR(doc_obj);
-    scintilla_send_message(SCINTILLA(sci), SCI_SETDOCPOINTER, 0, doc->pdoc);
+    ret = scintilla_send_message(sci, i_message, 0, doc->pdoc);
   }
-  return mrb_nil_value();
+  return mrb_fixnum_value(ret);
+}
+
+static mrb_value
+mrb_scintilla_gtk_send_message_set_pointer(mrb_state *mrb, mrb_value self)
+{
+  GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
+  mrb_int i_message;
+  mrb_int ret;
+  mrb_value cptr_obj;
+
+  mrb_get_args(mrb, "io", &i_message, &cptr_obj);
+  if (mrb_nil_p(cptr_obj) || mrb_integer_p(cptr_obj)) {
+    ret = scintilla_send_message(sci, i_message, 0, (sptr_t)0);
+  } else if (mrb_cptr_p(cptr_obj)){
+
+    ret = scintilla_send_message(sci, i_message, 0, (sptr_t)mrb_cptr(cptr_obj));
+  } else {
+    return mrb_nil_value();
+  }
+  return mrb_fixnum_value(ret);
 }
 
 static mrb_value
@@ -325,6 +370,13 @@ mrb_scintilla_gtk_release_document(mrb_state *mrb, mrb_value self)
   return mrb_nil_value();
 }
 
+static mrb_value
+mrb_scintilla_gtk_gtk_init(mrb_state *mrb, mrb_value self) {
+  fprintf(stderr, "gtk_init\n");
+  gtk_init(NULL, NULL);
+  return mrb_nil_value();
+}
+
 void
 mrb_mruby_scintilla_gtk_gem_init(mrb_state* mrb)
 {
@@ -338,18 +390,26 @@ mrb_mruby_scintilla_gtk_gem_init(mrb_state* mrb)
   mrb_define_method(mrb, sci, "send_message_get_str", mrb_scintilla_gtk_send_message_get_str, MRB_ARGS_ARG(1, 1));
   mrb_define_method(mrb, sci, "send_message_get_text_range", mrb_scintilla_gtk_send_message_get_text_range, MRB_ARGS_REQ(3));
 
-  mrb_define_method(mrb, sci, "sci_get_text", mrb_scintilla_gtk_get_text, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, sci, "sci_get_curline", mrb_scintilla_gtk_get_curline, MRB_ARGS_NONE());
+  mrb_define_method(mrb, sci, "send_message_get_text",
+                    mrb_scintilla_gtk_send_message_get_text, MRB_ARGS_REQ(2));
+  mrb_define_method(mrb, sci, "send_message_get_line",
+                    mrb_scintilla_gtk_send_message_get_line, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, sci, "send_message_get_curline",
+                    mrb_scintilla_gtk_send_message_get_curline,
+                    MRB_ARGS_NONE());
     
   mrb_define_method(mrb, sci, "sci_set_lexer_language", mrb_scintilla_gtk_set_lexer_language, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, sci, "sci_get_lexer_language", mrb_scintilla_gtk_get_lexer_language, MRB_ARGS_NONE());
 
-  mrb_define_method(mrb, sci, "sci_get_docpointer", mrb_scintilla_gtk_get_docpointer, MRB_ARGS_NONE());
-  mrb_define_method(mrb, sci, "sci_set_docpointer", mrb_scintilla_gtk_set_docpointer, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, sci, "sci_create_document", mrb_scintilla_gtk_create_document, MRB_ARGS_NONE());
-  mrb_define_method(mrb, sci, "sci_add_refdocument", mrb_scintilla_gtk_add_refdocument, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, sci, "sci_release_document", mrb_scintilla_gtk_release_document, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, sci, "send_message_get_docpointer",
+                    mrb_scintilla_gtk_send_message_get_docpointer,
+                    MRB_ARGS_ARG(1, 2));
+  mrb_define_method(mrb, sci, "send_message_set_docpointer",
+                    mrb_scintilla_gtk_send_message_set_docpointer, MRB_ARGS_REQ(2));
+  mrb_define_method(mrb, sci, "send_message_set_pointer",
+                    mrb_scintilla_gtk_send_message_set_pointer, MRB_ARGS_REQ(2));
 
+  mrb_define_class_method(mrb, sci, "gtk_init", mrb_scintilla_gtk_gtk_init, MRB_ARGS_NONE());
   scmrb = mrb;
 
   /* platform */
