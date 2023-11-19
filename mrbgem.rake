@@ -1,8 +1,8 @@
 MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
   spec.license = 'MIT'
   spec.authors = 'masahino'
-  spec.cc.flags << "-DGTK -DSCI_LEXER"
-  spec.add_dependency 'mruby-scintilla-base', :github => 'masahino/mruby-scintilla-base'
+  spec.cc.flags << '-DGTK -DSCI_LEXER'
+  spec.add_dependency 'mruby-scintilla-base', github: 'masahino/mruby-scintilla-base'
   spec.version = '5.3.8'
 
   def spec.download_scintilla
@@ -61,5 +61,8 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
       cc.include_paths << "#{scintilla_dir}/src"
       cc.include_paths << "#{lexilla_dir}/include"
     end
+    linker.flags_before_libraries << `pkg-config --libs gmodule-2.0 gtk+-3.0`.chomp
   end
+#  spec.cc.flags << `pkg-config --cflags gtk+-3.0`.chomp
+  spec.download_scintilla
 end
