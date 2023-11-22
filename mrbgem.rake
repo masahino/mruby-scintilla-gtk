@@ -48,19 +48,20 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
       sh %Q{(cd #{lexilla_dir}/src && make CXX=#{build.cxx.command} AR=#{build.archiver.command})}
     end
 
-    file "#{dir}/src/scintilla-gtk.c" => [scintilla_a, lexilla_a]
-
-    linker.flags_before_libraries << scintilla_a
-    linker.flags_before_libraries << lexilla_a
     [cc, cxx, objc, mruby.cc, mruby.cxx, mruby.objc].each do |cc|
       cc.flags << `pkg-config --cflags gtk+-3.0`.chomp
       if build.kind_of?(MRuby::CrossBuild) && %w(x86_64-apple-darwin14).include?(build.host_target)
         cc.flags << `-framework Cocoa`
+        cc.flags << `pkg-config --cflags gtk-mac-integration-gtk3`.chomp
       end
       cc.include_paths << "#{scintilla_dir}/include"
       cc.include_paths << "#{scintilla_dir}/src"
       cc.include_paths << "#{lexilla_dir}/include"
     end
+    file "#{dir}/src/scintilla-gtk.c" => [scintilla_a, lexilla_a]
+
+    linker.flags_before_libraries << scintilla_a
+    linker.flags_before_libraries << lexilla_a
     linker.flags_before_libraries << `pkg-config --libs gmodule-2.0 gtk+-3.0`.chomp
   end
 #  spec.cc.flags << `pkg-config --cflags gtk+-3.0`.chomp
