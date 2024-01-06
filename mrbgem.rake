@@ -3,12 +3,12 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
   spec.authors = 'masahino'
   spec.cc.flags << '-DGTK -DSCI_LEXER'
   spec.add_dependency 'mruby-scintilla-base', github: 'masahino/mruby-scintilla-base'
-  spec.version = '5.3.8'
+  spec.version = '5.4.1'
 
   def spec.download_scintilla
     require 'open-uri'
-    scintilla_ver = '538'
-    lexilla_ver = '528'
+    scintilla_ver = '541'
+    lexilla_ver = '530'
 
     scintilla_url = "https://scintilla.org/scintilla#{scintilla_ver}.tgz"
     lexilla_url = "https://scintilla.org/lexilla#{lexilla_ver}.tgz"
@@ -44,9 +44,9 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
       end
     end
 
-    file lexilla_a => lexilla_h do
-      sh %Q{(cd #{lexilla_dir}/src && make CXX=#{build.cxx.command} AR=#{build.archiver.command})}
-    end
+    #    file lexilla_a => lexilla_h do
+    #      sh %Q{(cd #{lexilla_dir}/src && make CXX=#{build.cxx.command} AR=#{build.archiver.command})}
+    #    end
 
     [cc, cxx, objc, mruby.cc, mruby.cxx, mruby.objc].each do |cc|
       cc.flags << `pkg-config --cflags gtk+-3.0`.chomp
@@ -58,12 +58,12 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
       cc.include_paths << "#{scintilla_dir}/src"
       cc.include_paths << "#{lexilla_dir}/include"
     end
-    file "#{dir}/src/scintilla-gtk.c" => [scintilla_a, lexilla_a]
+    file "#{dir}/src/scintilla-gtk.c" => [scintilla_a, lexilla_h]
 
     linker.flags_before_libraries << scintilla_a
-    linker.flags_before_libraries << lexilla_a
+    # linker.flags_before_libraries << lexilla_a
     linker.flags_before_libraries << `pkg-config --libs gmodule-2.0 gtk+-3.0`.chomp
   end
-#  spec.cc.flags << `pkg-config --cflags gtk+-3.0`.chomp
+  # spec.cc.flags << `pkg-config --cflags gtk+-3.0`.chomp
   spec.download_scintilla
 end
