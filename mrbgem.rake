@@ -3,12 +3,12 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
   spec.authors = 'masahino'
   spec.cc.flags << '-DGTK -DSCI_LEXER'
   spec.add_dependency 'mruby-scintilla-base', github: 'masahino/mruby-scintilla-base'
-  spec.version = '5.5.0'
+  spec.version = '5.5.1'
 
   def spec.download_scintilla
     require 'open-uri'
-    scintilla_ver = '550'
-    lexilla_ver = '532'
+    scintilla_ver = '551'
+    lexilla_ver = '533'
 
     scintilla_url = "https://scintilla.org/scintilla#{scintilla_ver}.tgz"
     lexilla_url = "https://scintilla.org/lexilla#{lexilla_ver}.tgz"
