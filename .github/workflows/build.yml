@@ -10,6 +10,10 @@ jobs:
       CC: gcc
     steps:
       - uses: actions/checkout@v7.0.0
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev pkg-config  
       - name: Ruby version
         run: ruby -v
       - name: Compiler version
