@@ -12,7 +12,6 @@
 #include "Scintilla.h"
 #define PLAT_GTK 1
 #include "ScintillaWidget.h"
-#include "Lexilla.h"
 
 #define DONE mrb_gc_arena_restore(mrb, 0)
 
@@ -245,31 +244,6 @@ mrb_scintilla_gtk_send_message_get_line(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
-mrb_scintilla_gtk_set_lexer_language(mrb_state *mrb, mrb_value self)
-{
-  GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
-  char *lang = NULL;
-  mrb_get_args(mrb, "z", &lang);
-
-  ILexer5 *pLexer = CreateLexer(lang);
-
-  scintilla_send_message(SCINTILLA(sci), SCI_SETILEXER, 0, (sptr_t)pLexer);
-  return mrb_nil_value();
-}
-static mrb_value
-mrb_scintilla_gtk_get_lexer_language(mrb_state *mrb, mrb_value self)
-{
-  GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
-  mrb_int len;
-  char *text = NULL;
-  
-  len = scintilla_send_message(SCINTILLA(sci), SCI_GETLEXERLANGUAGE, (uptr_t)0, (sptr_t)0) + 1;
-  text = (char *)mrb_malloc(mrb, sizeof(char)*len);
-  scintilla_send_message(SCINTILLA(sci), SCI_GETLEXERLANGUAGE, (uptr_t)len, (sptr_t)text);
-  return mrb_str_new_cstr(mrb, text);
-}
-
-static mrb_value
 mrb_scintilla_gtk_send_message_get_docpointer(mrb_state *mrb, mrb_value self)
 {
   GtkWidget *sci = (GtkWidget *)DATA_PTR(self);
@@ -372,7 +346,6 @@ mrb_scintilla_gtk_release_document(mrb_state *mrb, mrb_value self)
 
 static mrb_value
 mrb_scintilla_gtk_gtk_init(mrb_state *mrb, mrb_value self) {
-  fprintf(stderr, "gtk_init\n");
   gtk_init(NULL, NULL);
   return mrb_nil_value();
 }
@@ -398,9 +371,6 @@ mrb_mruby_scintilla_gtk_gem_init(mrb_state* mrb)
                     mrb_scintilla_gtk_send_message_get_curline,
                     MRB_ARGS_NONE());
     
-  mrb_define_method(mrb, sci, "sci_set_lexer_language", mrb_scintilla_gtk_set_lexer_language, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, sci, "sci_get_lexer_language", mrb_scintilla_gtk_get_lexer_language, MRB_ARGS_NONE());
-
   mrb_define_method(mrb, sci, "send_message_get_docpointer",
                     mrb_scintilla_gtk_send_message_get_docpointer,
                     MRB_ARGS_ARG(1, 2));
