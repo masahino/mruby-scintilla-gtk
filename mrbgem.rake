@@ -6,6 +6,9 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
   spec.version = '5.6.6'
 
   def spec.download_scintilla
+    return if @scintilla_download_configured
+
+    @scintilla_download_configured = true
     require 'open-uri'
     scintilla_ver = '566'
 
@@ -16,27 +19,29 @@ MRuby::Gem::Specification.new('mruby-scintilla-gtk') do |spec|
     scintilla_h = "#{scintilla_dir}/include/Scintilla.h"
 
     file scintilla_h do
-      URI.open(scintilla_url, :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+      URI.open(scintilla_url, open_timeout: 10, read_timeout: 30) do |http|
         scintilla_tar = http.read
         FileUtils.mkdir_p scintilla_dir
         IO.popen("tar xfz - -C #{filename scintilla_build_root}", 'wb') do |f|
           f.write scintilla_tar
         end
+        raise "tar failed: #{scintilla_url} (#{$?.exitstatus})" unless $?.success?
       end
+      raise "#{scintilla_h} not produced" unless File.exist?(scintilla_h)
     end
 
     file scintilla_a => scintilla_h do
       sh %Q{(cd #{scintilla_dir}/gtk && make GTK3=1 CXX=#{build.cxx.command} AR=#{build.archiver.command})}
     end
 
-    [cc, cxx, objc, mruby.cc, mruby.cxx, mruby.objc].each do |cc|
-      cc.flags << `pkg-config --cflags gtk+-3.0`.chomp
+    [cc, cxx, objc, mruby.cc, mruby.cxx, mruby.objc].each do |compiler|
+      compiler.flags << `pkg-config --cflags gtk+-3.0`.chomp
       if build.kind_of?(MRuby::CrossBuild) && %w(x86_64-apple-darwin14).include?(build.host_target)
-        cc.flags << `-framework Cocoa`
-        cc.flags << `pkg-config --cflags gtk-mac-integration-gtk3`.chomp
+        compiler.flags << `-framework Cocoa`
+        compiler.flags << `pkg-config --cflags gtk-mac-integration-gtk3`.chomp
       end
-      cc.include_paths << "#{scintilla_dir}/include"
-      cc.include_paths << "#{scintilla_dir}/src"
+      compiler.include_paths << "#{scintilla_dir}/include"
+      compiler.include_paths << "#{scintilla_dir}/src"
     end
     file "#{dir}/src/scintilla-gtk.c" => [scintilla_a]
 
